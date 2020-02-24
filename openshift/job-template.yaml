@@ -1,0 +1,86 @@
+---
+kind: Template
+apiVersion: v1
+metadata:
+  name: pg-connection-test-job
+  annotations:
+    description: PostgreSQL connection test.
+    tags: pg-connection-test
+  labels:
+    app: pg-connection-test
+
+objects:
+  - apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: "pg-connection-test"
+      labels:
+        app: pg-connection-test
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: pg-connection-test
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: "pg-connection-test"
+              image: "pg-test:latest"
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: KUBERNETES_API_URL
+                  value: https://kubernetes.default.svc.cluster.local
+                - name: KUBERNETES_VERIFY_TLS
+                  value: "0"
+                - name: THOTH_MIDDLETIER_NAMESPACE
+                  valueFrom:
+                    configMapKeyRef:
+                      name: thoth
+                      key: middletier-namespace
+                - name: THOTH_INFRA_NAMESPACE
+                  valueFrom:
+                    configMapKeyRef:
+                      name: thoth
+                      key: infra-namespace
+                - name: SENTRY_DSN
+                  valueFrom:
+                    secretKeyRef:
+                      key: sentry-dsn
+                      name: thoth
+                - name: THOTH_DEPLOYMENT_NAME
+                  valueFrom:
+                    configMapKeyRef:
+                      key: storage-bucket-name
+                      name: thoth
+                - name: KNOWLEDGE_GRAPH_HOST
+                  valueFrom:
+                    configMapKeyRef:
+                      key: postgresql-host
+                      name: thoth
+                - name: KNOWLEDGE_GRAPH_PORT
+                  value: "5432"
+                - name: KNOWLEDGE_GRAPH_SSL_DISABLED
+                  value: "1"
+                - name: KNOWLEDGE_GRAPH_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgresql
+                      key: database-user
+                - name: KNOWLEDGE_GRAPH_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgresql
+                      key: database-password
+                - name: KNOWLEDGE_GRAPH_DATABASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgresql
+                      key: database-name
+              resources:
+                limits:
+                  memory: "512Mi"
+                  cpu: 500m
+                requests:
+                  memory: "512Mi"
+                  cpu: 500m
